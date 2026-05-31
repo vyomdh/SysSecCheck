@@ -75,10 +75,10 @@ fi
 if [[ -n "$PORT_DATA" ]]; then
 	echo "$PORT_DATA" | head -1
 	echo "$PORT_DATA" | tail -n +2 | while read -r line;  do
-		port=$(echo "$line" | awk'{print$5}' | grep -oE '[0-9]+$' 
-		if echo "$port" | grep -gE '^(21|23|3306|5432|27017)$'; then
+	port=$(echo "$line" | awk '{print$5}' | grep -oE '[0-9]+$') 
+		if echo "$port" | grep -qE '^(21|23|3306|5432|27017)$'; then
 			critical "$line"
-		elif echo"$line" | grep -gE '^(22|80|443|8080|8943)$'; then
+		elif echo"$port" | grep -qE '^(22|80|443|8080|8943)$'; then
 			warn "$line"
 		else
 			ok "$line"
