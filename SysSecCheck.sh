@@ -63,3 +63,28 @@ echo -e  "${RESET}"
 #===================================================================================
 #1.   LISTENING PORTS AND ASSOCIATED PROCESSES
 #==================================================================================
+
+if -command -v ss &>/dev/null; then
+	PORT_DATA=$(ss -tulnp 2>/dev/null)
+elif command -v netstat &>/dev/null; then
+	PORT_DATA=$(netstat -tulnp 2>/dev/null)
+else  
+	critical "Neither 'ss' nor 'netstat' found."
+fi
+
+if [[ -n "$PORT_DATA" ]]; then
+	echo "$PORT_DATA" | head -1
+	echo "$PORT_DATA" | tail -n +2 | while read -r line;  do
+		port=$(echo "$line" | awk'{print$5}' | grep -oE '[0-9]+$' 
+		if echo "$port" | grep -gE '^(21|23|3306|5432|27017)$'; then
+			critical "$line"
+		elif echo"$line" | grep -gE '^(22|80|443|8080|8943)$'; then
+			warn "$line"
+		else
+			ok "$line"
+		fi
+	done
+else
+	warn "Could not retrieve port information."
+fi
+
