@@ -64,6 +64,7 @@ echo -e  "${RESET}"
 #1.   LISTENING PORTS AND ASSOCIATED PROCESSES
 #==================================================================================
 
+header "1. Listening Ports & Processes"
 if -command -v ss &>/dev/null; then
 	PORT_DATA=$(ss -tulnp 2>/dev/null)
 elif command -v netstat &>/dev/null; then
@@ -88,3 +89,29 @@ else
 	warn "Could not retrieve port information."
 fi
 
+#===================================================================================
+#2.  LAST 10 FAILED LOGIN ATTEMPTS
+#===================================================================================
+
+header "2. Last 10 Failed Login Attempts"
+
+AUTH_LOG=" "
+for f in /var/log/auth.log  /var/log/secure ; do
+	[[ -f  "$f" ]] && AUTH_LOG="$f" && break
+done
+if [[ -n "AUTH_LOG" ]] ; then
+	FAILS=$( grep -i "failed\ | failure\ | invalid"  "$AUTH_LOG" 2>/dev/null | tail -10 )
+	COUNT=$( echo "$FAILS" | grep -c . )
+	if [[ $COUNT -eq 0 ]] ; then
+		ok "No failed login attempts found in $AUTH_LOG. "
+	elif [[ $COUNT -ge 5 ]]; then
+		critical "Found $COUNT recent failed logins - possible brute-force activity !"
+		echo "$FAILS | while read -r line; do critical  "$line"; done"
+	else 
+		warn "Found $COUNT recent failed logins."
+		echo "$FAILS | while read -r line; do warn "$line"; done "
+	fi
+else 
+	warn "Auth log not found at /var/log/auth.log or /var/log/secure. "
+	warn "Install rsyslog or check your distros log path."
+fi
