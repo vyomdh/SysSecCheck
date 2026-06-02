@@ -36,7 +36,7 @@ critical() {
 header() {	
 	echo -e "\n${CYAN}${BOLD}================================================================${RESET}";  \
 	echo -e "${CYAN}${BOLD}     $*${RESET}";    \
-	echo -e "$CYAN}${BOLD} =================================================================${RESET}";
+	echo -e "${CYAN}${BOLD} =================================================================${RESET}";
 }
 
 subhead() {
@@ -115,3 +115,34 @@ else
 	warn "Auth log not found at /var/log/auth.log or /var/log/secure. "
 	warn "Install rsyslog or check your distros log path."
 fi
+
+#===================================================================================
+#3. WORD-WRITABLE FILES IN /etc AND /tmp
+#===================================================================================
+
+header "3. Word-Writable Files in /etc and /tmp"
+
+subhead "/etc - word writable files"
+
+ETC_WW=$( find /etc -xdev -type f -perm -o+w 2>/dev/null )
+if [[ -z "$ETC_WW" ]]; then
+	ok "No Word-Writable files found in /etc"
+else
+	critical "Word-Writable files found in /etc - this is a serious risk!"
+       echo "$ETC_WW" | while  read -r f; do critical "$f" ; done
+fi
+
+subhead "/tmp - Word-Writable files ( excluding sticky-bit dirs )"
+
+TMP_WW=$( find /tmp -xdev -type f -prem  -o+w 2>/dev/null )
+TMP_COUNT=$( echo "$TMP_WW" | grep -c . )
+if [[ $TMP_COUNT -eq 0 ]] ; then 
+	ok "No unexpected word-writable files in /tmp."
+elif [[ $TMP_COUNT -le 5 ]] ; then
+	warn "$TMP_COUNT word-writable file(s) in /tmp:"
+	echo "$TMP_WW" | while read -r f; do warn "$f" ; done
+else
+	critical "$TMP_COUNT word-writable files in /tmp - review immediately:"
+	echo "$TMP_WW" | while read -r f; do critical "$f" ; done 
+fi
+
