@@ -34,13 +34,13 @@ critical() {
 }
 
 header() {	
-	echo -e "\n${CYAN}${BOLD}================================================================${RESET}";  \
-	echo -e "${CYAN}${BOLD}     $*${RESET}";    \
-	echo -e "${CYAN}${BOLD} =================================================================${RESET}";
+	echo -e "\n${CYAN}${BOLD}=================================================================${RESET}";  \
+	echo -e "${CYAN}${BOLD}     $*${RESET}"; 	
+	echo -e "${CYAN}${BOLD}=================================================================${RESET}";
 }
 
 subhead() {
-	echo -e "\n${BOLD}------------------$*--------------------${RESET}";	
+	echo -e "\n${CYAN}${BOLD}------------------$*--------------------${RESET}";	
 }
 
 
@@ -146,3 +146,47 @@ else
 	echo "$TMP_WW" | while read -r f; do critical "$f" ; done 
 fi
 
+#===================================================================================
+#4. USERS WITH SUDO PRIVILEGES
+#===================================================================================
+ 
+header "4. Users with Sudo Privileges"
+
+subhead "Members of sudo/wheel group"
+SUDO_USERS= ""
+for grp in sudo wheel admin; do
+	MEMBERS=$( getent group "$grp" 2>/dev/null | cut -d : -f4 )
+	if [[ -n "$MEMBERS" ]] ; then
+		warn "Group '$grp' : $MEMBERS"
+		SUDO_USERS="$SUDO_USERS $MEMBERS"
+	fi
+done
+[[ -z "$SUDO_USERS" ]] && ok "No users found in sudo/wheel groups."
+
+subhead "Sudoer file entries"
+grep -v '^\s*#' /etc/sudoers 2>/dev/null | grep -v '^\s*$' | while read -r line ; do
+	if  echo "$line" | grep -q "ALL=(ALL)"; then
+		critical "Unrestricted sudo: $line"
+	else
+		warn "Sudoers entry: $line"
+	fi
+done
+
+subhead "Sudoers.d directory"
+if [[ -d /etc/sudoers.d ]]; then
+	FILES=$( ls /etc/sudoers.d/ 2>/dev/null )
+	if [[ -z "$FILES" ]]; then
+		ok "No files in /etc/sudoers.d."
+	else 
+		warn "Additional sudoers files found:"
+		for f in $FILES; do
+			warn "    /etc/sudoers.d/$f"
+		done
+	fi
+fi
+
+#===================================================================================
+#5. UFW FIREWALL STATUS
+#===================================================================================
+ 
+header "5. UFW Firewall Status"
