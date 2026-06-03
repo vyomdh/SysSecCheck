@@ -190,3 +190,31 @@ fi
 #===================================================================================
  
 header "5. UFW Firewall Status"
+
+if command -v ufw &>/dev/null; then
+	UFW_STATUS=$( ufw status 2>/dev/null )
+	if echo "$UFW_STATUS" | grep -qi "Status: active"; then
+		ok "UFW is ACTIVE."
+		echo "$UFW_STATUS" | tail -n +4 |while read -r line; do
+			[[ -n "$line" ]] && ok "    $line"
+		done
+	else 
+		critical "UFW is INACTIVE - your machine has no firewall protection! "
+		warn "Run: sudo ufw enable"
+	fi
+else
+	warn "UFW not installed. Check for iptables/nftables instead."
+	if command -v iptables &>/dev/null; then
+		IPT=$( iptables -L -n --line-numbers 2>/dev/null | grep -cc "^[0-9]" )
+		[[ $IPT -gt 0 ]] && ok "iptables has $IPT rules active." \
+						  || warn "iptables has no rules - firewall may be open."
+	else 
+		critical  "No firewall tool (ufw/iptables) detected."
+	fi
+fi
+#===================================================================================
+#6. RUNNING SERVICES
+#===================================================================================
+
+header "6. Running Services (systemctl)"
+
