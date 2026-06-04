@@ -218,3 +218,35 @@ fi
 
 header "6. Running Services (systemctl)"
 
+if command -v systemctl &>/dev/null; then
+	SERVICES=$( systemctl list-unit --type=services --state=running --no-pager --no-legend 2>/dev/null )
+	SVC_COUNT=$( echo "%SERVICES" | grep -c "." )
+	subhead "Total running services: $SVC_COUNT"
+
+	RISKY="telnet ftp vsftpd rsh rlogin finger cups bluetooth avahi"
+	echo "$SERVICES" | while read -r line; do
+		svc_name=$( echo "$line" | awk '{print $1}' )
+		is_risky=0
+		for r in $RISKY; do
+			echo "$svc_name" | grep -qi "$r" && is_risky=1 && break
+		done
+		if [[ $is_risky -eq 1 ]]; then
+			critical "Risky service running: $line"
+		elif echo "$svc_name" | grep -qiE "ssh | nginx | apache | mysql | postgres"; then
+			warn "$line"
+		else 
+			ok "$line"
+		fi
+	done
+else
+	warn "systemctl not available. Are you running a non-systemd distro?"
+fi
+#===================================================================================
+# SUMMARY FOOTER
+#===================================================================================
+echo -e "\n ${CYAN} ${BOLD}==============================================================${RESET}"
+echo -e "${CYAN} ${BOLD} Audit Complete - $(date '+ %H:%M:%S  ')${RESET}"
+echo -e "${GREEN} GREEN = OK / expected ${RESET}"
+echo -e "${YELLOW} YELLOW = Worth reviewing ${RESET} "
+echo -e  "${RED} RED = Needs immediate attention ${RESET}"
+echo -e "${CYAN} ${BOLD}===============================================================${RESET} \n"
