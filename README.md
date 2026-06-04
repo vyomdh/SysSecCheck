@@ -21,10 +21,10 @@ A Bash script that audits your Linux machine's security posture and prints a cle
 ---
 
 ## Planned Imporvements
-- [] SUID/SGID file detection
-- [] SSH hardening checks ( PermitRootLogin, PasswordAuthentication )
-- [] Cron-job review
-- [] Package update status check
-- [] '--quit' mode ( only show WARN/CRITICAL )
+- [ ] SUID/SGID file detection
+- [ ] SSH hardening checks ( PermitRootLogin, PasswordAuthentication )
+- [ ] Cron-job review
+- [ ] Package update status check
+- [ ] '--quit' mode ( only show WARN/CRITICAL )
 
 
